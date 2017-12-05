@@ -190,7 +190,7 @@ def rotation_matrices(angles, directions):
     return R1 + R2 + R3
 
 
-def angles_between_list_of_vectors(v0, v1):
+def angles_between_list_of_vectors(v0, v1, tol=1e-3):
     """ Calculate the angle between a collection of 3d vectors
 
     Examples
@@ -200,6 +200,12 @@ def angles_between_list_of_vectors(v0, v1):
 
     v1 : ndarray
         Numpy array of shape (npts, 3) storing a collection of 3d vectors
+
+    tol : float, optional
+        Acceptable numerical error for errors in angle.
+        This variable is only used to round off numerical noise that otherwise
+        causes exceptions to be raised by the inverse cosine function.
+        Default is 0.001.
 
     Returns
     -------
@@ -214,6 +220,13 @@ def angles_between_list_of_vectors(v0, v1):
     v1 = v1/np.sqrt(np.sum(v1 * v1, axis=1)).reshape((npts, 1))
 
     dot = np.sum(v0 * v1, axis=1)
+
+    #  Protect against tiny numerical excesses beyond the range [-1 ,1]
+    mask1 = (dot > 1) & (dot < 1 + tol)
+    dot = np.where(mask1, 1., dot)
+    mask2 = (dot < -1) & (dot > -1 - tol)
+    dot = np.where(mask2, -1., dot)
+
     return np.arccos(dot)
 
 
