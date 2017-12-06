@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 from astropy.utils.misc import NumpyRNGContext
+from scipy.stats import powerlaw
 
 
 __all__ = ('random_perpendicular_directions', 'random_partially_aligned_vectors',
@@ -140,6 +141,27 @@ def random_partially_aligned_vectors(v, coeff, seed=None):
     w = np.sign(coeff)*e_v*coeff**2 + e_v_perp*(1. - coeff**2)
     w_norms = elementwise_norm(w).reshape((npts, 1))
     return w/w_norms
+
+
+def axes_correlated_with_z(powerlaw_indices=1., seed=None, uran=False):
+    """
+    """
+    powerlaw_indices = np.atleast_1d(powerlaw_indices)
+    npts = powerlaw_indices.shape[0]
+
+    with NumpyRNGContext(seed):
+        phi = np.random.uniform(0, 2*np.pi, npts)
+        uran = np.random.rand(npts)
+
+    cos_t = 2*powerlaw.isf(1-uran, np.abs(powerlaw_indices)) - 1.
+
+    sin_t = np.sqrt((1.-cos_t*cos_t))
+
+    x = sin_t * np.cos(phi)
+    y = sin_t * np.sin(phi)
+    z = cos_t * np.sign(powerlaw_indices)
+
+    return np.vstack((x, y, z)).T
 
 
 def rotation_matrices(angles, directions):
