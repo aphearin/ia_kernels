@@ -143,7 +143,7 @@ def random_partially_aligned_vectors(v, coeff, seed=None):
     return w/w_norms
 
 
-def axes_correlated_with_z(powerlaw_indices=1., seed=None, uran=False):
+def axes_correlated_with_z(powerlaw_indices, seed=None):
     """
     """
     powerlaw_indices = np.atleast_1d(powerlaw_indices)
@@ -162,6 +162,24 @@ def axes_correlated_with_z(powerlaw_indices=1., seed=None, uran=False):
     z = cos_t * np.sign(powerlaw_indices)
 
     return np.vstack((x, y, z)).T
+
+
+def axes_correlated_with_input_vector(input_vectors, powerlaw_indices=1., seed=None):
+    """
+    """
+    input_unit_vectors = normalized_vectors(input_vectors)
+    assert input_unit_vectors.shape[1] == 3
+    npts = input_unit_vectors.shape[0]
+
+    z_correlated_axes = axes_correlated_with_z(powerlaw_indices, seed)
+
+    z_axes = np.tile((0, 0, 1), npts).reshape((npts, 3))
+
+    angles = angles_between_list_of_vectors(z_axes, input_unit_vectors)
+    rotation_axes = vectors_normal_to_planes(z_axes, input_unit_vectors)
+    matrices = rotation_matrices(angles, rotation_axes)
+
+    return rotate_vector_collection(matrices, z_correlated_axes)
 
 
 def rotation_matrices(angles, directions):
