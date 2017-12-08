@@ -193,6 +193,36 @@ def rotation_matrices_from_angles(angles, directions):
     return R1 + R2 + R3
 
 
+def rotation_matrices_from_vectors(v0, v1):
+    """ Calculate a collection of rotation matrices defined by the unique
+    transformation rotating v1 into v2 about the mutually perpendicular axis.
+
+    Parameters
+    ----------
+    v0 : ndarray
+        Numpy array of shape (npts, 3) storing a collection of initial vectors
+
+    v1 : ndarray
+        Numpy array of shape (npts, 3) storing a collection of final vectors
+
+    Returns
+    -------
+    matrices : ndarray
+        Numpy array of shape (npts, 3, 3) rotating each v0 into the corresponding v1
+
+    Notes
+    -----
+    The function `rotate_vector_collection` can be used to efficiently
+    apply the returned collection of matrices to a collection of 3d vectors
+    """
+    v0 = normalized_vectors(v0)
+    v1 = normalized_vectors(v1)
+    directions = vectors_normal_to_planes(v0, v1)
+    angles = angles_between_list_of_vectors(v0, v1)
+
+    return rotation_matrices_from_angles(angles, directions)
+
+
 def angles_between_list_of_vectors(v0, v1, tol=1e-3):
     """ Calculate the angle between a collection of 3d vectors
 
