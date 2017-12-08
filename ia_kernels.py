@@ -7,8 +7,8 @@ from astropy.utils.misc import NumpyRNGContext
 from scipy.stats import powerlaw
 
 
-__all__ = ('random_perpendicular_directions', 'random_partially_aligned_vectors',
-        'rotation_matrices', 'angles_between_list_of_vectors', 'vectors_normal_to_planes',
+__all__ = ('random_perpendicular_directions', 'rotation_matrices_from_angles',
+        'angles_between_list_of_vectors', 'vectors_normal_to_planes',
         'rotate_vector_collection')
 __author__ = ('Andrew Hearin', )
 
@@ -140,12 +140,12 @@ def axes_correlated_with_input_vector(input_vectors, powerlaw_indices=1., seed=N
 
     angles = angles_between_list_of_vectors(z_axes, input_unit_vectors)
     rotation_axes = vectors_normal_to_planes(z_axes, input_unit_vectors)
-    matrices = rotation_matrices(angles, rotation_axes)
+    matrices = rotation_matrices_from_angles(angles, rotation_axes)
 
     return rotate_vector_collection(matrices, z_correlated_axes)
 
 
-def rotation_matrices(angles, directions):
+def rotation_matrices_from_angles(angles, directions):
     """ Calculate a collection of rotation matrices defined by
     an input collection of rotation angles and axes
 
