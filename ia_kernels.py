@@ -106,43 +106,6 @@ def random_perpendicular_directions(v, seed=None):
     return e_v_perp/e_v_perp_norm
 
 
-def random_partially_aligned_vectors(v, coeff, seed=None):
-    """ Given an input collection of 3d vectors, v, return a collection of 3d vectors
-    with the following property: the dot product between each returned vector
-    and its corresponding vector in x is given by the corresponding entry stored in ``coeff``.
-
-    Examples
-    --------
-    v : ndarray
-        Numpy array of shape (npts, 3) storing a collection of 3d vectors
-
-    coeff : ndarray
-        Numpy array of shape (npts,) storing desired dot product between the
-        vectors v and the returned vectors
-
-    seed : int, optional
-        Random number seed used to choose a random orthogonal direction
-
-    Returns
-    -------
-    result : ndarray
-        Numpy array of shape (npts, 3)
-
-    """
-    v = np.atleast_2d(v)
-    npts = v.shape[0]
-    v_norms = elementwise_norm(v).reshape((npts, 1))
-    e_v = v/v_norms
-
-    e_v_perp = random_perpendicular_directions(v, seed=seed)
-
-    coeff = np.atleast_1d(coeff).reshape((npts, 1))
-
-    w = np.sign(coeff)*e_v*coeff**2 + e_v_perp*(1. - coeff**2)
-    w_norms = elementwise_norm(w).reshape((npts, 1))
-    return w/w_norms
-
-
 def axes_correlated_with_z(powerlaw_indices, seed=None):
     """
     """
