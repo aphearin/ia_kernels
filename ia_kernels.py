@@ -7,14 +7,14 @@ from astropy.utils.misc import NumpyRNGContext
 from scipy.stats import powerlaw
 
 
-__all__ = ('random_perpendicular_directions', 'rotation_matrices_from_angles',
-        'angles_between_list_of_vectors', 'vectors_normal_to_planes',
-        'rotate_vector_collection')
+__all__ = ('axes_correlated_with_input_vector', )
 __author__ = ('Andrew Hearin', )
 
 
 def elementwise_dot(x, y):
-    """
+    """ Calculate the dot product between
+    each pair of elements in two input lists of 3d points.
+
     Parameters
     ----------
     x : ndarray
@@ -35,7 +35,7 @@ def elementwise_dot(x, y):
 
 
 def elementwise_norm(x):
-    """ Calculate the normalization of a set of 3d points.
+    """ Calculate the normalization of each element in a list of 3d points.
 
     Parameters
     ----------
@@ -52,7 +52,7 @@ def elementwise_norm(x):
 
 
 def normalized_vectors(vectors):
-    """ Return a unit-vector for each 3d vector in the input collection of 3d points.
+    """ Return a unit-vector for each 3d vector in the input list of 3d points.
 
     Parameters
     ----------
@@ -71,8 +71,9 @@ def normalized_vectors(vectors):
 
 
 def random_perpendicular_directions(v, seed=None):
-    """ Given an input collection of 3d vectors, return a collection of 3d vectors
-    such that each returned vector is orthogonal to the corresponding vector in x.
+    """ Given an input list of 3d vectors, v, return a list of 3d vectors
+    such that each returned vector has unit-length and is
+    orthogonal to the corresponding vector in v.
 
     Parameters
     ----------
@@ -106,10 +107,41 @@ def random_perpendicular_directions(v, seed=None):
     return e_v_perp/e_v_perp_norm
 
 
-def axes_correlated_with_z(powerlaw_indices, seed=None):
+def axes_correlated_with_z(p, seed=None):
+    r""" Calculate a list of 3d unit-vectors whose orientation is correlated
+    with the z-axis (0, 0, 1).
+
+    Parameters
+    ----------
+    p : ndarray
+        Numpy array with shape (npts, ) defining the strength of the correlation
+        between the orientation of the returned vectors and the z-axis.
+
+        For values of `p` greater than unity,
+        the return vectors will be preferentially aligned with the positive z-axis;
+        the strength of this alignment increases with p > 1. For values of `p`
+        less than negative one, the returned vectors will be preferentially aligned
+        with the negative z-axis. When p = 1 or p = -1, the returned vectors will
+        have purely random orientations. Values of -1 < p < 1 should (probably) not be used.
+
+    seed : int, optional
+        Random number seed used to choose a random orthogonal direction
+
+    Returns
+    -------
+    unit_vectors : ndarray
+        Numpy array of shape (npts, 3)
+
+    Notes
+    -----
+    The `axes_correlated_with_z` function works by modifying the standard method
+    for generating random points on the unit sphere. In the standard calculation,
+    the z-coordinate :math:`z = \cos(\theta)`, where :math:`\cos(\theta)` is just a
+    uniform random variable. In this calculation, :math:`\cos(\theta)` is not
+    uniform random, but is instead implemented as a clipped power law
+    implemented with `scipy.stats.powerlaw`.
     """
-    """
-    powerlaw_indices = np.atleast_1d(powerlaw_indices)
+    powerlaw_indices = np.atleast_1d(p)
     npts = powerlaw_indices.shape[0]
 
     with NumpyRNGContext(seed):
@@ -127,14 +159,42 @@ def axes_correlated_with_z(powerlaw_indices, seed=None):
     return np.vstack((x, y, z)).T
 
 
-def axes_correlated_with_input_vector(input_vectors, powerlaw_indices=1., seed=None):
-    """
+def axes_correlated_with_input_vector(input_vectors, p=1., seed=None):
+    r""" Calculate a list of 3d unit-vectors whose orientation is correlated
+    with the orientation of `input_vectors`.
+
+    Parameters
+    ----------
+    input_vectors : ndarray
+        Numpy array of shape (npts, 3) storing a list of 3d vectors defining the
+        preferred orientation with which the returned vectors will be correlated.
+
+        Note that the normalization of `input_vectors` will be ignored.
+
+    p : ndarray
+        Numpy array with shape (npts, ) defining the strength of the correlation
+        between the orientation of the input and returned vectors.
+
+        For values of `p` greater than unity,
+        the return vectors will be preferentially aligned with the positive z-axis;
+        the strength of this alignment increases with p > 1. For values of `p`
+        less than negative one, the returned vectors will be preferentially aligned
+        with the negative z-axis. When p = 1 or p = -1, the returned vectors will
+        have purely random orientations. Values of -1 < p < 1 should (probably) not be used.
+
+    seed : int, optional
+        Random number seed used to choose a random orthogonal direction
+
+    Returns
+    -------
+    unit_vectors : ndarray
+        Numpy array of shape (npts, 3)
     """
     input_unit_vectors = normalized_vectors(input_vectors)
     assert input_unit_vectors.shape[1] == 3
     npts = input_unit_vectors.shape[0]
 
-    z_correlated_axes = axes_correlated_with_z(powerlaw_indices, seed)
+    z_correlated_axes = axes_correlated_with_z(p, seed)
 
     z_axes = np.tile((0, 0, 1), npts).reshape((npts, 3))
 
@@ -147,7 +207,7 @@ def axes_correlated_with_input_vector(input_vectors, powerlaw_indices=1., seed=N
 
 def rotation_matrices_from_angles(angles, directions):
     """ Calculate a collection of rotation matrices defined by
-    an input collection of rotation angles and axes
+    an input collection of rotation angles and rotation axes.
 
     Parameters
     ----------
@@ -200,10 +260,14 @@ def rotation_matrices_from_vectors(v0, v1):
     Parameters
     ----------
     v0 : ndarray
-        Numpy array of shape (npts, 3) storing a collection of initial vectors
+        Numpy array of shape (npts, 3) storing a collection of initial vector orientations.
+
+        Note that the normalization of `v0` will be ignored.
 
     v1 : ndarray
-        Numpy array of shape (npts, 3) storing a collection of final vectors
+        Numpy array of shape (npts, 3) storing a collection of final vectors.
+
+        Note that the normalization of `v1` will be ignored.
 
     Returns
     -------
@@ -231,8 +295,12 @@ def angles_between_list_of_vectors(v0, v1, tol=1e-3):
     v0 : ndarray
         Numpy array of shape (npts, 3) storing a collection of 3d vectors
 
+        Note that the normalization of `v0` will be ignored.
+
     v1 : ndarray
         Numpy array of shape (npts, 3) storing a collection of 3d vectors
+
+        Note that the normalization of `v1` will be ignored.
 
     tol : float, optional
         Acceptable numerical error for errors in angle.
@@ -244,7 +312,9 @@ def angles_between_list_of_vectors(v0, v1, tol=1e-3):
     -------
     angles : ndarray
         Numpy array of shape (npts, ) storing the angles between each pair of
-        corresponding points in v0 and v1
+        corresponding points in v0 and v1.
+
+        Returned values are in units of radians spanning [0, pi].
     """
     v0 = np.atleast_2d(v0)
     v1 = np.atleast_2d(v1)
@@ -272,8 +342,12 @@ def vectors_normal_to_planes(x, y):
     x : ndarray
         Numpy array of shape (npts, 3) storing a collection of 3d vectors
 
+        Note that the normalization of `x` will be ignored.
+
     y : ndarray
         Numpy array of shape (npts, 3) storing a collection of 3d vectors
+
+        Note that the normalization of `y` will be ignored.
 
     Returns
     -------
@@ -286,7 +360,7 @@ def vectors_normal_to_planes(x, y):
 
 def rotate_vector_collection(rotation_matrices, vectors):
     """ Given a collection of rotation matrices and a collection of 3d vectors,
-    apply each matrix to the corresponding vector.
+    apply each matrix to rotate the corresponding vector.
 
     Examples
     --------
