@@ -107,6 +107,29 @@ def random_perpendicular_directions(v, seed=None):
     return e_v_perp/e_v_perp_norm
 
 
+def powerlaw_index_smooth_transition(p):
+    """ Compute the power law index associated with the correlation strength parameter.
+
+    Parameters
+    ----------
+    p : ndarray
+        Numpy array with shape (npts, ) defining the strength of the correlation
+        between the orientation of the returned vectors and the z-axis.
+
+        Positive (negative) values of `p` produce galaxy principal axes
+        that are statistically aligned with the positive (negative) z-axis;
+        the strength of this alignment increases with the magnitude of p.
+        When p = 0, galaxy axes are randomly oriented.
+
+    Returns
+    -------
+    index : ndarray
+        Numpy array of shape (npts, ) storing the values that should be passed
+        to `scipy.stats.powerlaw` to achieve the desired behavior.
+    """
+    return -np.where(p > 0, p + 1., p - 1.)
+
+
 def axes_correlated_with_z(p, seed=None):
     r""" Calculate a list of 3d unit-vectors whose orientation is correlated
     with the z-axis (0, 0, 1).
@@ -117,12 +140,10 @@ def axes_correlated_with_z(p, seed=None):
         Numpy array with shape (npts, ) defining the strength of the correlation
         between the orientation of the returned vectors and the z-axis.
 
-        For values of `p` greater than unity,
-        the return vectors will be preferentially aligned with the positive z-axis;
-        the strength of this alignment increases with p > 1. For values of `p`
-        less than negative one, the returned vectors will be preferentially aligned
-        with the negative z-axis. When p = 1 or p = -1, the returned vectors will
-        have purely random orientations. Values of -1 < p < 1 should (probably) not be used.
+        Positive (negative) values of `p` produce galaxy principal axes
+        that are statistically aligned with the positive (negative) z-axis;
+        the strength of this alignment increases with the magnitude of p.
+        When p = 0, galaxy axes are randomly oriented.
 
     seed : int, optional
         Random number seed used to choose a random orthogonal direction
@@ -141,7 +162,8 @@ def axes_correlated_with_z(p, seed=None):
     uniform random, but is instead implemented as a clipped power law
     implemented with `scipy.stats.powerlaw`.
     """
-    powerlaw_indices = np.atleast_1d(p)
+    p = np.atleast_1d(p)
+    powerlaw_indices = powerlaw_index_smooth_transition(p)
     npts = powerlaw_indices.shape[0]
 
     with NumpyRNGContext(seed):
@@ -159,7 +181,7 @@ def axes_correlated_with_z(p, seed=None):
     return np.vstack((x, y, z)).T
 
 
-def axes_correlated_with_input_vector(input_vectors, p=1., seed=None):
+def axes_correlated_with_input_vector(input_vectors, p=0., seed=None):
     r""" Calculate a list of 3d unit-vectors whose orientation is correlated
     with the orientation of `input_vectors`.
 
@@ -171,16 +193,15 @@ def axes_correlated_with_input_vector(input_vectors, p=1., seed=None):
 
         Note that the normalization of `input_vectors` will be ignored.
 
-    p : ndarray
+    p : ndarray, optional
         Numpy array with shape (npts, ) defining the strength of the correlation
-        between the orientation of the input and returned vectors.
+        between the orientation of the returned vectors and the z-axis.
+        Default is zero, for no correlation.
 
-        For values of `p` greater than unity,
-        the return vectors will be preferentially aligned with the positive z-axis;
-        the strength of this alignment increases with p > 1. For values of `p`
-        less than negative one, the returned vectors will be preferentially aligned
-        with the negative z-axis. When p = 1 or p = -1, the returned vectors will
-        have purely random orientations. Values of -1 < p < 1 should (probably) not be used.
+        Positive (negative) values of `p` produce galaxy principal axes
+        that are statistically aligned with the positive (negative) z-axis;
+        the strength of this alignment increases with the magnitude of p.
+        When p = 0, galaxy axes are randomly oriented.
 
     seed : int, optional
         Random number seed used to choose a random orthogonal direction
